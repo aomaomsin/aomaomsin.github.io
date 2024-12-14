@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเสร็จอิเล็กทรอนิกส์</title>
+    <style>
+         body {
+            font-family: "Arial", sans-serif;
+            background-color: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .receipt {
+            background: white;
+            width: 600px;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .receipt-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .receipt-header p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .company-name {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .company-name input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .receipt table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .receipt th, .receipt td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .receipt th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .receipt td input {
+            width: 100%;
+            padding: 5px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .summary {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .summary p {
+            margin: 8px 0;
+        }
+        .summary p span {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .receipt-footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #555;
+        }
+        .hidden {
+            display: none;
+        }
+        .finalized {
+            pointer-events: none;
+            background-color: white;
+        }
+        .receipt-footer p {
+            font-size: 18px; /* เพิ่มขนาดตัวอักษร */
+            font-weight: bold; /* ทำตัวหนา */
+            text-align: left; /* จัดชิดซ้าย */
+            margin: 5px 0;
+        }
+        /* CSS สำหรับข้อความขอบคุณ */
+        .receipt-footer .thank-you {
+            font-size: 16px; /* ขนาดตัวอักษรปกติ */
+            font-weight: normal; /* ตัวไม่หนา */
+            text-align: center; /* จัดกลาง */
+            margin-top: 10px; /* เพิ่มระยะห่างด้านบน */
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="receipt" id="receipt">
+        <div class="receipt-header">
+            <h1>ใบเสร็จอิเล็กทรอนิกส์</h1>
+            <p id="dateDisplay">วันที่: <span id="currentDate"></span></p>
+        </div>
+        
+        <!-- ช่องกรอกชื่อบริษัท -->
+        <div class="company-name">
+            <input type="text" id="companyName" placeholder="กรุณากรอกชื่อบริษัท">
+        </div>
+
+        <!-- รายการสินค้า -->
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>รายการสินค้า</th>
+                    <th>ราคาสินค้า (บาท)</th>
+                    <th>จำนวนสินค้า</th>
+                    <th>ยอดรวม</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- รายการสินค้า -->
+            </tbody>
+        </table>
+
+        <!-- สรุปยอด -->
+        <div class="summary">
+            <p>ยอดรวมก่อนหักภาษี: <span id="totalBeforeTax">0.00</span> บาท</p>
+            <p>หักส่วนลด 1%: <span id="discount">0.00</span> บาท</p>
+            <p>ยอดรวมหลังส่วนลด: <span id="totalAfterDiscount">0.00</span> บาท</p>
+            <p>ภาษีมูลค่าเพิ่ม 7%: <span id="vat">0.00</span> บาท</p>
+            <p>ยอดรวมสุทธิ: <span id="grandTotal">0.00</span> บาท</p>
+        </div>
+
+        <!-- ช่องกรอกผู้รับเงินและผู้รับของ -->
+        <div id="additionalInfo">
+            <p>ผู้รับเงิน:</p>
+            <input type="text" id="cashierName" placeholder="กรอกชื่อผู้รับเงิน">
+            <p>ผู้รับของ:</p>
+            <input type="text" id="receiverName" placeholder="กรอกชื่อผู้รับของ">
+        </div>
+
+        <!-- ปุ่มเพิ่มสินค้า -->
+        <button class="btn" id="addItemBtn" onclick="addItem()">เพิ่มสินค้า</button>
+
+        <!-- ปุ่มเสร็จสิ้น -->
+        <button class="btn hidden" id="finishBtn" onclick="generateReceipt()">เสร็จสิ้น</button>
+
+        <div class="receipt-footer">
+            <p class="thank-you">ขอบคุณที่ใช้บริการ</p>
+        </div>
+    </div>
+
+    <script>
+        const itemsTable = document.querySelector("#itemsTable tbody");
+
+        // แสดงวันที่ปัจจุบัน
+        window.onload = function () {
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.getDate().toString().padStart(2, '0')}/${
+                (currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+            document.getElementById("currentDate").textContent = formattedDate;
+        };
+
+        // เพิ่มรายการสินค้า
+        function addItem() {
+            const itemRow = document.createElement("tr");
+            itemRow.innerHTML = `
+                <td>
+                    <select>
+                        <option value="ขวดคอยาว">ขวดคอยาว</option>
+                        <option value="ขวดจรวด">ขวดจรวด</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
+                    </select>
+                </td>
+                <td><input type="number" step="0.01" placeholder="ราคาสินค้า (บาท)" class="price-input"></td>
+                <td><input type="number" min="1" placeholder="จำนวนสินค้า" class="quantity-input"></td>
+                <td class="subtotal">0.00</td>
+            `;
+            itemsTable.appendChild(itemRow);
+
+            const quantityInput = itemRow.querySelector(".quantity-input");
+            const priceInput = itemRow.querySelector(".price-input");
+            const subtotalCell = itemRow.querySelector(".subtotal");
+
+            [quantityInput, priceInput].forEach(input => {
+                input.addEventListener("input", () => {
+                    calculateSubtotal(quantityInput, priceInput, subtotalCell);
+                    calculateTotal();
+                });
+            });
+
+            document.getElementById("finishBtn").classList.remove("hidden");
+        }
+
+        function calculateSubtotal(quantityInput, priceInput, subtotalCell) {
+            const quantity = parseInt(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const subtotal = quantity * price;
+            subtotalCell.textContent = subtotal.toFixed(2);
+        }
+
+        function calculateTotal() {
+            let totalBeforeTax = 0;
+
+            itemsTable.querySelectorAll(".subtotal").forEach(cell => {
+                totalBeforeTax += parseFloat(cell.textContent) || 0;
+            });
+
+            const discount = totalBeforeTax * 0.01;
+            const totalAfterDiscount = totalBeforeTax - discount;
+            const vat = totalAfterDiscount * 0.07;
+            const grandTotal = totalAfterDiscount + vat;
+
+            document.getElementById("totalBeforeTax").textContent = totalBeforeTax.toFixed(2);
+            document.getElementById("discount").textContent = discount.toFixed(2);
+            document.getElementById("totalAfterDiscount").textContent = totalAfterDiscount.toFixed(2);
+            document.getElementById("vat").textContent = vat.toFixed(2);
+            document.getElementById("grandTotal").textContent = grandTotal.toFixed(2);
+        }
+
+        function generateReceipt() {
+            const companyName = document.getElementById("companyName").value;
+            const cashierName = document.getElementById("cashierName").value;
+            const receiverName = document.getElementById("receiverName").value;
+
+            if (companyName && cashierName && receiverName) {
+                // ซ่อนปุ่มและช่องกรอกข้อมูล
+                document.getElementById("finishBtn").classList.add("hidden");
+                document.getElementById("addItemBtn").classList.add("hidden");
+                document.getElementById("additionalInfo").classList.add("hidden");
+
+                // แสดงข้อมูลผู้รับเงินและผู้รับของในใบเสร็จ
+                const footer = document.querySelector(".receipt-footer");
+                footer.innerHTML = `
+                    <p>ผู้รับเงิน: ${cashierName}</p>
+                    <p>ผู้รับของ: ${receiverName}</p>
+                    <p class="thank-you">ขอบคุณที่ใช้บริการ</p>
+                `;
+
+                document.querySelector("#receipt").classList.add("finalized");
+
+                // บันทึกใบเสร็จเป็นภาพ
+                html2canvas(document.getElementById("receipt")).then(function(canvas) {
+                    const link = document.createElement("a");
+                    link.href = canvas.toDataURL("image/png");
+                    link.download = "receipt.png";
+                    link.click();
+                });
+            } else {
+                alert("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อบริษัท, ผู้รับเงิน, ผู้รับของ)!");
+            }
+        }
+    </script>
+</body>
+</html>
